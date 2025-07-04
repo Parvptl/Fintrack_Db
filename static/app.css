@@ -1,0 +1,130 @@
+/* === General Body Styling ===
+body {
+    background: #f8f9fa;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+}
+
+/* === Login Box Styling === */
+/* .login-container {
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    width: 350px;
+    text-align: center;
+} */
+
+/* === Input Fields === */
+/* .login-container input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+} */
+
+/* === Login Button === */
+/* .login-container button {
+    width: 100%;
+    padding: 10px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s ease-in-out;
+}
+
+.login-container button:hover {
+    background: #0056b3;
+}  */
+/* Apply the Background */
+body {
+    background: url("../static/login-bg.jpg") no-repeat center center/cover;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+}
+
+/* Centered Box */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+/* Login Box */
+.login-box {
+    background: #f5f5f5;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 5px 5px 15px #b8b8b8, -5px -5px 15px #ffffff; /* Embossed Effect */
+    text-align: center;
+    width: 350px;
+}
+
+/* Avatar */
+.avatar img {
+    width: 80px;
+    border-radius: 50%;
+    background: #eee;
+    padding: 10px;
+    box-shadow: inset 5px 5px 10px #b8b8b8, inset -5px -5px 10px #ffffff;
+}
+
+/* Headings */
+h2 {
+    margin-top: 10px;
+    font-size: 24px;
+    color: #333;
+}
+
+/* Labels */
+label {
+    display: block;
+    text-align: left;
+    font-size: 14px;
+    color: #777;
+    margin-top: 15px;
+}
+
+/* Input Fields */
+input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: #f0f0f0;
+    box-shadow: inset 4px 4px 8px #b8b8b8, inset -4px -4px 8px #ffffff;
+    outline: none;
+    margin-top: 5px;
+}
+
+/* Button */
+button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 20px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(145deg, #e0e0e0, #ffffff);
+    box-shadow: 5px 5px 15px #b8b8b8, -5px -5px 15px #ffffff;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: linear-gradient(145deg, #ffffff, #e0e0e0);
+    box-shadow: 3px 3px 10px #b8b8b8, -3px -3px 10px #ffffff;
+}
+

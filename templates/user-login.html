@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Login | Investment Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="login-container">
+    <div class="login-box">
+        <h2>User Login</h2>
+
+        <div id="login-error" class="error-message" style="color:red;"></div>
+
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="Enter your email" required>
+
+        <label for="user_id">User ID</label>
+        <input type="number" id="user_id" placeholder="Enter your User ID" required>
+
+        <button onclick="loginUser()">Sign In</button>
+    </div>
+</div>
+
+<script>
+    async function loginUser() {
+        const email = document.getElementById("email").value.trim();
+        const userId = document.getElementById("user_id").value.trim();
+        const errorDiv = document.getElementById("login-error");
+
+        errorDiv.textContent = ""; // Clear old errors
+
+        if (!email || !userId) {
+            errorDiv.textContent = "Please enter both Email and User ID.";
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/user/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: email, user_id: parseInt(userId) })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Successful login
+                localStorage.setItem("user_id", data.user_id);  // Store user_id locally for dashboard
+                window.location.href = "/dashboard"; // Redirect to dashboard
+            } else if (response.status === 401) {
+                errorDiv.textContent = data.error || "Invalid email or user ID.";
+            } else {
+                errorDiv.textContent = data.error || "Login failed. Please try again.";
+            }
+
+        } catch (error) {
+            console.error("Login error:", error);
+            errorDiv.textContent = "Could not connect to server. Please try again later.";
+        }
+    }
+</script>
+
+</body>
+</html>

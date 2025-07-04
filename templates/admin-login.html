@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login | Investment Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+<div class="login-container">
+    <div class="login-box">
+        <h2>Admin Login</h2>
+
+        <div id="admin-login-error" class="error-message" style="color:red;"></div>
+
+        <label for="admin-password">Password</label>
+        <input type="password" id="admin-password" placeholder="Enter admin password" required>
+
+        <button onclick="loginAdmin()">Admin Sign In</button>
+    </div>
+</div>
+
+<script>
+    async function loginAdmin() {
+        const password = document.getElementById("admin-password").value.trim();
+        const errorDiv = document.getElementById("admin-login-error");
+
+        errorDiv.textContent = ""; // clear previous errors
+
+        if (!password) {
+            errorDiv.textContent = "Please enter Admin Password.";
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/admin/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                window.location.href = "/admin-dashboard";
+            } else if (response.status === 401) {
+                errorDiv.textContent = data.error || "Invalid admin password.";
+            } else {
+                errorDiv.textContent = data.error || "Admin login failed.";
+            }
+        } catch (error) {
+            console.error("Admin login error:", error);
+            errorDiv.textContent = "Could not connect to server.";
+        }
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,26 @@
+<h1>Admin Dashboard</h1>
+
+<input type="number" id="userIdInput" placeholder="Enter User ID" />
+<button onclick="fetchSummary()">Get User Summary</button>
+
+<pre id="summaryOutput"></pre>
+
+<script>
+function fetchSummary() {
+    const userId = document.getElementById('userIdInput').value;
+    if (!userId) {
+        alert("Please enter a User ID");
+        return;
+    }
+
+    fetch(`/admin/user-summary/${userId}`)
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('summaryOutput').textContent = JSON.stringify(data, null, 4);
+    })
+    .catch(error => {
+        console.error("Error fetching summary:", error);
+        alert("Failed to fetch summary");
+    });
+}
+</script>

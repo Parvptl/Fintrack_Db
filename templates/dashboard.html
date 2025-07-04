@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <style>
+    .dashboard-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .section {
+      margin-bottom: 30px;
+    }
+    .section h2 {
+      margin-bottom: 10px;
+    }
+    .card {
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 10px;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-container">
+    <h1>Welcome to Your Dashboard</h1>
+    <a href="{{ url_for('logout') }}">Logout</a>
+
+    <!-- Portfolios Section -->
+    <div class="section">
+      <h2>Your Portfolios</h2>
+      <div id="portfolios"></div>
+    </div>
+
+    <!-- Goals Section -->
+    <div class="section">
+      <h2>Your Goals</h2>
+      <div id="goals"></div>
+    </div>
+
+    <!-- Investments Section -->
+    <div class="section">
+      <h2>Your Investments</h2>
+      <div id="investments"></div>
+    </div>
+
+    <!-- Summary Section -->
+    <div class="section">
+      <h2>Summary</h2>
+      <div id="total-returns"></div>
+      <div id="active-investments"></div>
+    </div>
+
+
+  <script>
+    const userId = {{ session['user_id'] | tojson }};
+
+    // PORTFOLIOS
+    fetch(`/user-portfolios/${userId}`)
+  .then(res => res.json())
+  .then(data => {
+    const div = document.getElementById('portfolios');
+    if (data.error) {
+      div.innerHTML = `<p class="error">${data.error}</p>`;
+    } else if (data.length === 0) {
+      div.innerHTML = '<p>No portfolios found.</p>';
+    } else {
+      data.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        fetch(`/portfolio-value/${p.portfolio_id}`)
+          .then(res => res.json())
+          .then(val => {
+            console.log(val)
+            const value = val.portfolio_value || 0;
+            console.log(value);
+            card.innerHTML = `
+              <strong>Portfolio: ${p.portfolio_name}</strong>
+              <p>ID: ${p.portfolio_id}</p>
+              <p><strong>Value:</strong> ${value.toFixed(2)}</p>`;
+          }).catch(() => {
+            card.innerHTML = `
+              <strong>Portfolio: ${p.portfolio_name}</strong>
+              <p>ID: ${p.portfolio_id}</p>
+              <p class="error">Error loading value</p>`;
+          });
+        div.appendChild(card);
+      });
+    }
+  });
+
+
+    // GOALS
+    fetch(`/user-goals/${userId}`)
+      .then(res => res.json())
+      .then(data => {
+        const div = document.getElementById('goals');
+        if (data.error) {
+          div.innerHTML = `<p class="error">${data.error}</p>`;
+        } else if (data.length === 0) {
+          div.innerHTML = '<p>No goals found.</p>';
+        } else {
+          data.forEach(goal => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            fetch(`/goal-status/${goal.goal_id}`)
+              .then(res => res.json())
+              .then(status => {
+                const statusText = status.goal_met ? "Achieved" : "In Progress";
+                card.innerHTML = `
+                  <strong>Goal: ${goal.goal_name}</strong>
+                  <p>ID: ${goal.goal_id}</p>
+                  <p><strong>Status:</strong> ${statusText}</p>`;
+              }).catch(() => {
+                card.innerHTML = `
+                  <strong>Goal: ${goal.goal_name}</strong>
+                  <p>ID: ${goal.goal_id}</p>
+                  <p class="error">Error loading status</p>`;
+              });
+            div.appendChild(card);
+          });
+        }
+      });
+
+    // INVESTMENTS
+    fetch(`/user-investments/${userId}`)
+      .then(res => res.json())
+      .then(data => {
+        const div = document.getElementById('investments');
+        if (data.error) {
+          div.innerHTML = `<p class="error">${data.error}</p>`;
+        } else if (data.length === 0) {
+          div.innerHTML = '<p>No investments found.</p>';
+        } else {
+          data.forEach(inv => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            fetch(`/investment-performance/${inv.investment_id}`)
+              .then(res => res.json())
+              .then(perf => {
+                const performance = perf.investment_performance || 0;
+                const color = performance > 0 ? "green" : (performance < 0 ? "red" : "black");
+                card.innerHTML = `
+                  <strong>Security: ${inv.security_name}</strong>
+                  <p>ID: ${inv.investment_id}</p>
+                  <p>Amount Invested: $${inv.amount_invested}</p>
+                  <p>Current Value: $${inv.current_value}</p>
+                  <p><strong>Performance:</strong> <span style="color:${color}">${performance.toFixed(2)}%</span></p>`;
+              }).catch(() => {
+                card.innerHTML = `
+                  <strong>Security: ${inv.security_name}</strong>
+                  <p>ID: ${inv.investment_id}</p>
+                  <p>Amount Invested: $${inv.amount_invested}</p>
+                  <p>Current Value: $${inv.current_value}</p>
+                  <p class="error">Error loading performance</p>`;
+              });
+            div.appendChild(card);
+          });
+        }
+      });
+
+    // TOTAL RETURNS
+    fetch(`/total-returns/${userId}`)
+      .then(res => res.json())
+      .then(data => {
+        const div = document.getElementById('total-returns');
+        if (data.error) {
+          div.innerHTML = `<p class="error">${data.error}</p>`;
+        } else {
+          div.innerHTML = `<p><strong>Total Returns:</strong> $${data.total_returns}</p>`;
+        }
+      });
+
+    // ACTIVE INVESTMENTS
+    fetch(`/active-investments/${userId}`)
+      .then(res => res.json())
+      .then(data => {
+        const div = document.getElementById('active-investments');
+        if (data.error) {
+          div.innerHTML = `<p class="error">${data.error}</p>`;
+        } else {
+          div.innerHTML = `<p><strong>Active Investments:</strong> ${data.active_investments}</p>`;
+        }
+      });
+
+    fetch(`/investment-performance/${inv.investment_id}`)
+        .then(res => res.json())
+        .then(perf => {
+            const performance = perf.investment_performance || 0;
+            const color = performance > 0 ? "green" : (performance < 0 ? "red" : "black");
+            card.innerHTML = `
+            <strong>Security: ${inv.security_name}</strong>
+            <p>ID: ${inv.investment_id}</p>
+            <p>Amount Invested: $${inv.amount_invested}</p>
+            <p>Current Value: $${inv.current_value}</p>
+            <p><strong>Performance:</strong> <span style="color:${color}">${performance.toFixed(2)}%</span></p>`;
+  })
+
+  </script>
+  <div class="section">
+    <h2>Financial Advisor</h2>
+    <div id="total-returns"></div>
+    <div id="active-investments"></div>
+    <button onclick="window.location.href='/advisor_req'">Request Advisor</button>
+  </div>
+    
+</body>
+</html>

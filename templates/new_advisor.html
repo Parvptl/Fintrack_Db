@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Investments and Total Returns</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <style>
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .card {
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 10px;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Investments and Total Returns</h1>
+    <div id="investments"></div>
+    <div id="total-returns"></div>
+    <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+  </div>
+
+  <script>
+    const userId = {{ session['user_id'] | tojson }};
+
+    // Fetch Investments
+    fetch(`/user-investments/${userId}`)
+      .then(res => res.json())
+      .then(data => {
+        const div = document.getElementById('investments');
+        if (data.error) {
+          div.innerHTML = `<p class="error">${data.error}</p>`;
+        } else if (data.length === 0) {
+          div.innerHTML = '<p>No investments found.</p>';
+        } else {
+          data.forEach(inv => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            fetch(`/investment-performance/${inv.investment_id}`)
+              .then(res => res.json())
+              .then(perf => {
+                const performance = perf.investment_performance || 0;
+                const color = performance > 0 ? "green" : (performance < 0 ? "red" : "black");
+                card.innerHTML = `
+                  <strong>Security: ${inv.security_name}</strong>
+                  <p>ID: ${inv.investment_id}</p>
+                  <p>Amount Invested: $${inv.amount_invested}</p>
+                  <p>Current Value: $${inv.current_value}</p>
+                  <p><strong>Performance:</strong> <span style="color:${color}">${performance.toFixed(2)}%</span></p>`;
+              }).catch(() => {
+                card.innerHTML = `
+                  <strong>Security: ${inv.security_name}</strong>
+                  <p>ID: ${inv.investment_id}</p>
+                  <p>Amount Invested: $${inv.amount_invested}</p>
+                  <p>Current Value: $${inv.current_value}</p>
+                  <p class="error">Error loading performance</p>`;
+              });
+            div.appendChild(card);
+          });
+        }
+      });
+
+    // Fetch Total Returns
+    fetch(`/total-returns/${userId}`)
+      .then(res => res.json())
+      .then(data => {
+        const div = document.getElementById('total-returns');
+        if (data.error) {
+          div.innerHTML = `<p class="error">${data.error}</p>`;
+        } else {
+          div.innerHTML = `<p><strong>Total Returns:</strong> $${data.total_returns}</p>`;
+        }
+      });
+      
+      // Display Goal Status
+fetch(`/user-goals/${userId}`)
+  .then(res => res.json())
+  .then(data => {
+    const div = document.getElementById('goal-progress');
+    if (data.error) {
+      div.innerHTML = `<p class="error">${data.error}</p>`;
+    } else if (data.length === 0) {
+      div.innerHTML = '<p>No goals found.</p>';
+    } else {
+      data.forEach(goal => {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        fetch(`/goal-status/${goal.goal_id}`)
+          .then(res => res.json())
+          .then(status => {
+            const statusText = status.goal_met ? "✅ Achieved" : "⌛ In Progress";
+            const color = status.goal_met ? "green" : "orange";
+            card.innerHTML = `
+              <strong>Goal:</strong> ${goal.goal_name}<br>
+              <strong>Status:</strong> <span style="color:${color}">${statusText}</span>`;
+          })
+          .catch(() => {
+            card.innerHTML = `
+              <strong>Goal:</strong> ${goal.goal_name}<br>
+              <span class="error">Error loading goal status</span>`;
+          });
+
+        div.appendChild(card);
+      });
+    }
+  });
+
+  </script>
+</body>
+</html>
