@@ -11,7 +11,8 @@ app = Flask(__name__)
 DATABASE_URL = os.getenv("postgresql://fintrackdb_gvp5_user:EhrUZmSPh85bOg6W0kcboxo0ErxwTVVr@dpg-d2nilpgdl3ps73cpgchg-a/fintrackdb_gvp5")
 
 # Flask session config
-app.secret_key = os.urandom(24).hex()  # Secure random secret key
+app.secret_key = "mytemporarysecretkey"
+  # Secure random secret key
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
