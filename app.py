@@ -7,16 +7,15 @@ import urllib.parse as up
 
 app = Flask(__name__)
 
-
-DATABASE_URL = os.getenv("postgresql://fintrackdb_gvp5_user:EhrUZmSPh85bOg6W0kcboxo0ErxwTVVr@dpg-d2nilpgdl3ps73cpgchg-a/fintrackdb_gvp5")
+# ✅ Render PostgreSQL connection string (quoted properly)
+DATABASE_URL = "postgresql://fintrackdb_gvp5_user:EhrUZmSPh85bOg6W0kcboxo0ErxwTVVr@dpg-d2nilpgdl3ps73cpgchg-a.oregon-postgres.render.com/fintrackdb_gvp5"
 
 # Flask session config
-app.secret_key = "mytemporarysecretkey"
-  # Secure random secret key
+app.secret_key = "mytemporarysecretkey"  # Replace with secure random secret in production
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
-# Database config
+# ✅ Database config parsing
 if DATABASE_URL:
     up.uses_netloc.append("postgres")
     url = up.urlparse(DATABASE_URL)
@@ -29,7 +28,7 @@ if DATABASE_URL:
         "port": url.port,
     }
 else:
-    # Fallback for local dev
+    # Local fallback
     DB_CONFIG = {
         "dbname": "fintrackdb",
         "user": "postgres",
@@ -38,13 +37,11 @@ else:
         "port": "5432"
     }
 
-# Admin password in plain text for easy control (Change for production)
+# Admin password (⚠️ use env variable in production)
 ADMIN_PASSWORD_PLAIN = "adminpass"
+ADMIN_HASHED_PASSWORD = bcrypt.hashpw(ADMIN_PASSWORD_PLAIN.encode("utf-8"), bcrypt.gensalt())
 
-# Hash admin password once
-ADMIN_HASHED_PASSWORD = bcrypt.hashpw(ADMIN_PASSWORD_PLAIN.encode('utf-8'), bcrypt.gensalt())
-
-# Database helper
+# ✅ Database helper function
 def execute_query(query, params=None, fetch=True):
     try:
         conn = psycopg2.connect(**DB_CONFIG)
@@ -59,17 +56,16 @@ def execute_query(query, params=None, fetch=True):
         print(f"Database error: {e}")
         raise Exception(f"Database error: {str(e)}")
 
-# Home
+# ---------------- ROUTES ----------------
+
 @app.route("/")
 def index():
     return render_template("index.html")
 
-# User Login Page
 @app.route("/user-login", methods=["GET"])
 def user_login():
     return render_template("user-login.html")
 
-# User Login API
 @app.route("/api/user/login", methods=["POST"])
 def api_user_login():
     data = request.get_json()
@@ -93,19 +89,16 @@ def api_user_login():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Dashboard (user)
 @app.route("/dashboard")
 def dashboard():
     if "user_id" not in session:
         return redirect(url_for("user_login"))
     return render_template("dashboard.html")
 
-# Admin Login Page
 @app.route("/admin-login")
 def admin_login():
     return render_template("admin-login.html")
 
-# Admin Login API
 @app.route("/api/admin/login", methods=["POST"])
 def admin_login_api():
     data = request.get_json()
@@ -114,7 +107,7 @@ def admin_login_api():
     if not password:
         return jsonify({"error": "Password is required"}), 400
 
-    password_bytes = password.encode('utf-8')
+    password_bytes = password.encode("utf-8")
 
     if bcrypt.checkpw(password_bytes, ADMIN_HASHED_PASSWORD):
         session["admin"] = True
@@ -122,42 +115,34 @@ def admin_login_api():
     else:
         return jsonify({"error": "Invalid admin password"}), 401
 
-# Admin Dashboard
 @app.route("/admin-dashboard")
 def admin_dashboard():
     if not session.get("admin"):
         return redirect(url_for("admin_login"))
     return render_template("admin-dashboard.html")
 
-# Advisor Dashboard
 @app.route("/advisor-dashboard")
 def advisor_dashboard():
     if "user_id" not in session:
         return redirect(url_for("user_login"))
     return render_template("advisor-dashboard.html")
 
-# Logout
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("index"))
 
-# Advisor Request API
 @app.route("/api/advisor-request", methods=["POST"])
 def advisor_request():
     data = request.get_json()
-    user_id = data.get('userId')
+    user_id = data.get("userId")
     if not user_id:
-        return jsonify({'success': False, 'message': 'User ID is required.'}), 400
+        return jsonify({"success": False, "message": "User ID is required."}), 400
 
-    request_advisor = data.get('requestAdvisor')
-
-    if not user_id:
-        return jsonify({'success': False, 'message': 'User ID is required.'}), 400
+    request_advisor = data.get("requestAdvisor")
 
     try:
         if request_advisor:
-            # Fetch an available advisor (e.g., with the fewest users assigned)
             advisor_query = """
                 SELECT advisor_id 
                 FROM advisors 
@@ -174,7 +159,6 @@ def advisor_request():
 
             selected_advisor_id = result[0][0]
 
-            # Assign the advisor
             query = """
                 UPDATE users 
                 SET advisor_requested = TRUE, advisor_id = %s 
@@ -190,42 +174,10 @@ def advisor_request():
             execute_query(query, (user_id,), fetch=False)
 
         return jsonify({'success': True, 'advisor_assigned': request_advisor}), 200
-
     except Exception as e:
         print(f"Error processing advisor request: {e}")
         return jsonify({'success': False, 'message': 'Could not process request.'}), 500
 
-# @app.route('/advisor_req')
-# def new_advisor():
-#     return render_template('new_advisor.html')
-# @app.route('/user-dashboard-info/<int:user_id>')
-# def user_dashboard_info(user_id):
-#     # Sample dummy data for now
-#     portfolios = [
-#         {"portfolio_id": 1, "portfolio_name": "Growth Fund"},
-#         {"portfolio_id": 2, "portfolio_name": "Retirement Plan"}
-#     ]
-#     return {"portfolios": portfolios}
-
-@app.route('/advisor_req')
-def investments_and_returns():
-    user_id = session.get('user_id')
-    # Fetch investments and total returns data
-    investments_data = fetch_user_investments(user_id)
-    total_returns_data = fetch_total_returns(user_id)
-    
-    return render_template('new_advisor.html', investments=investments_data, total_returns=total_returns_data)
-
-def fetch_user_investments(user_id):
-    # Logic to fetch user investments from the database or API
-    pass
-
-def fetch_total_returns(user_id):
-    # Logic to fetch total returns from the database or API
-    pass
-
-
-# User Portfolios
 @app.route("/user-portfolios/<int:user_id>")
 def get_user_portfolios(user_id):
     try:
@@ -235,7 +187,6 @@ def get_user_portfolios(user_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# User Goals
 @app.route("/user-goals/<int:user_id>")
 def get_user_goals(user_id):
     try:
@@ -245,7 +196,6 @@ def get_user_goals(user_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# User Investments
 @app.route("/user-investments/<int:user_id>")
 def get_user_investments(user_id):
     try:
@@ -263,7 +213,6 @@ def get_user_investments(user_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Portfolio Investments
 @app.route("/portfolio-investments/<int:portfolio_id>")
 def get_portfolio_investments(portfolio_id):
     try:
@@ -276,28 +225,24 @@ def get_portfolio_investments(portfolio_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Admin User Summary
 @app.route("/admin/user-summary/<int:user_id>")
 def get_user_summary(user_id):
     try:
         query = "SELECT get_user_summary(%s)"
         result = execute_query(query, (user_id,))
-        return jsonify(result[0][0])  # because result is [[jsonb]]
+        return jsonify(result[0][0])
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Portfolio Value
 @app.route("/portfolio-value/<int:portfolio_id>")
 def get_portfolio_value(portfolio_id):
     try:
         query = "SELECT * from GetPortfolioValue(%s)"
         result = execute_query(query, (portfolio_id,))
-        print(result[0][0])
         return jsonify({"portfolio_value": float(result[0][0])})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Goal Status
 @app.route("/goal-status/<int:goal_id>")
 def is_goal_met(goal_id):
     try:
@@ -307,7 +252,6 @@ def is_goal_met(goal_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Investment Performance
 @app.route("/investment-performance/<int:investment_id>")
 def get_investment_performance(investment_id):
     try:
@@ -317,8 +261,6 @@ def get_investment_performance(investment_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-# Total Returns
 @app.route("/total-returns/<int:user_id>")
 def get_total_user_returns(user_id):
     try:
@@ -328,7 +270,6 @@ def get_total_user_returns(user_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Active Investments
 @app.route("/active-investments/<int:user_id>")
 def count_active_investments(user_id):
     try:
