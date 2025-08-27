@@ -3,8 +3,12 @@ import psycopg2
 import bcrypt
 from flask_session import Session
 import os
+import urllib.parse as up
 
 app = Flask(__name__)
+
+
+DATABASE_URL = os.getenv("postgresql://fintrackdb_gvp5_user:EhrUZmSPh85bOg6W0kcboxo0ErxwTVVr@dpg-d2nilpgdl3ps73cpgchg-a/fintrackdb_gvp5")
 
 # Flask session config
 app.secret_key = os.urandom(24).hex()  # Secure random secret key
@@ -12,13 +16,26 @@ app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 # Database config
-DB_CONFIG = {
-    "dbname": "fintrackdb",
-    "user": "postgres",
-    "password": "Parv@2005",
-    "host": "localhost",
-    "port": "5432"
-}
+if DATABASE_URL:
+    up.uses_netloc.append("postgres")
+    url = up.urlparse(DATABASE_URL)
+
+    DB_CONFIG = {
+        "dbname": url.path[1:],
+        "user": url.username,
+        "password": url.password,
+        "host": url.hostname,
+        "port": url.port,
+    }
+else:
+    # Fallback for local dev
+    DB_CONFIG = {
+        "dbname": "fintrackdb",
+        "user": "postgres",
+        "password": "Parv@2005",
+        "host": "localhost",
+        "port": "5432"
+    }
 
 # Admin password in plain text for easy control (Change for production)
 ADMIN_PASSWORD_PLAIN = "adminpass"
