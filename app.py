@@ -283,6 +283,12 @@ def count_active_investments(user_id):
         return jsonify({"active_investments": float(result[0][0])})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@app.route("/advisor_req")
+def advisor_req():
+    # logic here
+    return render_template("new_advisor.html")
+
 
 # Run app
 if __name__ == "__main__":
