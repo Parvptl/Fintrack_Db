@@ -287,7 +287,7 @@ def count_active_investments(user_id):
 @app.route("/advisor_req")
 def advisor_req():
     # logic here
-    return render_template("advisor-dashboard.html")
+    return render_template("new_advisor.html")
 
 
 # Run app
