@@ -284,10 +284,10 @@ def count_active_investments(user_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-@app.route("/advisor_req")
-def advisor_req():
-    # logic here
-    return render_template("advisor-dashboard.html")
+# @app.route("/advisor_req")
+# def advisor_req():
+#     # logic here
+#     return render_template("advisor-dashboard.html")
 
 
 # Run app
