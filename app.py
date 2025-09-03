@@ -7,7 +7,7 @@ import urllib.parse as up
 
 app = Flask(__name__)
 
-# ✅ Render PostgreSQL connection string (quoted properly)
+#Render PostgreSQL connection string (quoted properly)
 DATABASE_URL = "postgresql://fintrackdb_gvp5_user:EhrUZmSPh85bOg6W0kcboxo0ErxwTVVr@dpg-d2nilpgdl3ps73cpgchg-a.oregon-postgres.render.com/fintrackdb_gvp5"
 
 # Flask session config
@@ -15,7 +15,7 @@ app.secret_key = "mytemporarysecretkey"  # Replace with secure random secret in 
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
-# ✅ Database config parsing
+#Database config parsing
 if DATABASE_URL:
     up.uses_netloc.append("postgres")
     url = up.urlparse(DATABASE_URL)
@@ -37,11 +37,11 @@ else:
         "port": "5432"
     }
 
-# Admin password (⚠️ use env variable in production)
+# Admin password (use env variable in production)
 ADMIN_PASSWORD_PLAIN = "adminpass"
 ADMIN_HASHED_PASSWORD = bcrypt.hashpw(ADMIN_PASSWORD_PLAIN.encode("utf-8"), bcrypt.gensalt())
 
-# ✅ Database helper function
+# Database helper function
 def execute_query(query, params=None, fetch=True):
     try:
         conn = psycopg2.connect(**DB_CONFIG)
@@ -287,7 +287,7 @@ def count_active_investments(user_id):
 @app.route("/advisor_req")
 def advisor_req():
     # logic here
-    return render_template("new_advisor.html")
+    return render_template("advisor-dashboard.html")
 
 
 # Run app
