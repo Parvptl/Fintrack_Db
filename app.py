@@ -7,19 +7,18 @@ import urllib.parse as up
 
 app = Flask(__name__)
 
-#Render PostgreSQL connection string (quoted properly)
+# Render PostgreSQL connection string
 DATABASE_URL = "postgresql://fintrackdb_gvp5_user:EhrUZmSPh85bOg6W0kcboxo0ErxwTVVr@dpg-d2nilpgdl3ps73cpgchg-a.oregon-postgres.render.com/fintrackdb_gvp5"
 
 # Flask session config
-app.secret_key = "mytemporarysecretkey"  # Replace with secure random secret in production
+app.secret_key = "mytemporarysecretkey"  # ⚠️ replace with os.environ in production
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
-#Database config parsing
+# Database config parsing
 if DATABASE_URL:
     up.uses_netloc.append("postgres")
     url = up.urlparse(DATABASE_URL)
-
     DB_CONFIG = {
         "dbname": url.path[1:],
         "user": url.username,
@@ -28,20 +27,19 @@ if DATABASE_URL:
         "port": url.port,
     }
 else:
-    # Local fallback
     DB_CONFIG = {
         "dbname": "fintrackdb",
         "user": "postgres",
         "password": "Parv@2005",
         "host": "localhost",
-        "port": "5432"
+        "port": "5432",
     }
 
-# Admin password (use env variable in production)
+# Admin password
 ADMIN_PASSWORD_PLAIN = "adminpass"
 ADMIN_HASHED_PASSWORD = bcrypt.hashpw(ADMIN_PASSWORD_PLAIN.encode("utf-8"), bcrypt.gensalt())
 
-# Database helper function
+# Database helper
 def execute_query(query, params=None, fetch=True):
     try:
         conn = psycopg2.connect(**DB_CONFIG)
@@ -108,7 +106,6 @@ def admin_login_api():
         return jsonify({"error": "Password is required"}), 400
 
     password_bytes = password.encode("utf-8")
-
     if bcrypt.checkpw(password_bytes, ADMIN_HASHED_PASSWORD):
         session["admin"] = True
         return jsonify({"message": "Admin login successful"}), 200
@@ -177,6 +174,54 @@ def advisor_request():
     except Exception as e:
         print(f"Error processing advisor request: {e}")
         return jsonify({'success': False, 'message': 'Could not process request.'}), 500
+
+# ---------------- ADVISOR PAGE (like local) ----------------
+
+@app.route('/advisor_req')
+def investments_and_returns():
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for("user_login"))
+
+    investments_data = fetch_user_investments(user_id)
+    total_returns_data = fetch_total_returns(user_id)
+
+    return render_template('new_advisor.html',
+                           investments=investments_data,
+                           total_returns=total_returns_data)
+
+def fetch_user_investments(user_id):
+    try:
+        query = """
+            SELECT i.investment_id, i.security_name, i.amount_invested, i.current_value
+            FROM Investment i
+            JOIN Portfolio p ON i.portfolio_id = p.portfolio_id
+            WHERE p.user_id = %s
+        """
+        rows = execute_query(query, (user_id,))
+        return [
+            {
+                "investment_id": r[0],
+                "security_name": r[1],
+                "amount_invested": r[2],
+                "current_value": r[3]
+            }
+            for r in rows
+        ]
+    except Exception as e:
+        print(f"Error fetching investments: {e}")
+        return []
+
+def fetch_total_returns(user_id):
+    try:
+        query = "SELECT GetTotalUserReturns(%s)"
+        rows = execute_query(query, (user_id,))
+        return float(rows[0][0]) if rows and rows[0][0] is not None else 0.0
+    except Exception as e:
+        print(f"Error fetching total returns: {e}")
+        return 0.0
+
+# ---------------- OTHER ROUTES (same as local) ----------------
 
 @app.route("/user-portfolios/<int:user_id>")
 def get_user_portfolios(user_id):
@@ -283,14 +328,8 @@ def count_active_investments(user_id):
         return jsonify({"active_investments": float(result[0][0])})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
-# @app.route("/advisor_req")
-# def advisor_req():
-#     # logic here
-#     return render_template("advisor-dashboard.html")
 
-
-# Run app
+# ---------------- RUN APP ----------------
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Render provides PORT
+    port = int(os.environ.get("PORT", 5000))  # Render sets PORT
     app.run(host="0.0.0.0", port=port, debug=False)
